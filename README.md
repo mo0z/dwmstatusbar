@@ -5,4 +5,4 @@ Very simple statusbar (battery, link, date-time) for dynamic window manager (dwm
 
 (edit your: IFACE and BATTERY)
 
-Compile with: gcc -Wall -pedantic -std=c99 -O3 -s -lX11 dwmstatusbars.c -o dwmstatusbars
+Compile with: gcc -Wall -pedantic -std=c99 -Os -s -lX11 dwmstatusbars.c -o dwmstatusbars
