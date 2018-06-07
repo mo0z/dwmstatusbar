@@ -5,4 +5,4 @@ Very simple statusbar (battery, link, date-time) for dynamic window manager (dwm
 
 Edit your: `IFACE` and `BATTERY`
 
-Build: `gcc -Wall -pedantic -std=c99 -Os -s -lX11 dwmstatusbar.c -o dwmstatusbar`
+Build: `gcc -Wall -pedantic -std=c99 -O3 -s -lX11 dwmstatusbar.c -o dwmstatusbar`
