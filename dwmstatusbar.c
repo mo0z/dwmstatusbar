@@ -34,7 +34,21 @@
 #define BUF_DATETIME_SZ 128
 #define BUF_SZ (64 + BUF_CAPACITY_SZ + BUF_LINK_SZ + BUF_DATETIME_SZ)
 
-int main(void)
+static char *getprogname_of_argv(char *argv_zero_tzs);
+
+/* get current process name without path */
+char *getprogname_of_argv(char *argv_zero_tzs)
+{
+    char *p;
+    if (argv_zero_tzs == NULL)
+        return NULL;
+    for (p = argv_zero_tzs; *argv_zero_tzs; ++argv_zero_tzs)
+        if (*argv_zero_tzs == '/')
+            p = argv_zero_tzs + 1;
+    return p;
+}
+
+int main(int argc __attribute__((unused)), char *argv[])
 {
     Display *dpy;
     Window w;
@@ -46,7 +60,8 @@ int main(void)
 
     if ((dpy = XOpenDisplay(NULL)) == NULL)
     {
-        fprintf(stderr, "Error open DISPLAY\n");
+        fprintf(stderr, "%s: Error open DISPLAY\n",
+                getprogname_of_argv(argv[0]));
         return EXIT_FAILURE;
     }
 
