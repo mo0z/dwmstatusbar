@@ -26,9 +26,9 @@
 #define PATH_CAPACITY "/sys/class/power_supply/" BATTERY "/capacity"
 #define DATETIME_FORMAT "%Y-%m-%d %a %H:%M"
 #define BUF_FORMAT BATTERY ":%s%%  " IFACE ":%s  %s"
-#define SLEEP_SEC 5
-#define SLEEP_1 2  /* SLEEP_SEC * SLEEP_1 + SLEEP_SEC */
-#define SLEEP_2 11 /* SLEEP_SEC * SLEEP_2 + SLEEP_SEC */
+#define SLEEP_SEC 10
+#define SLEEP_1 2 /* SLEEP_SEC * SLEEP_1 */
+#define SLEEP_2 6 /* SLEEP_SEC * SLEEP_2 */
 #define BUF_CAPACITY_SZ 16
 #define BUF_LINK_SZ 32
 #define BUF_DATETIME_SZ 128
@@ -40,7 +40,7 @@ int main(int argc __attribute__((unused)), char *argv[])
 {
     Display *dpy;
     Window w;
-    size_t count_1 = SLEEP_1, count_2 = SLEEP_2;
+    size_t count_1 = 1, count_2 = 1;
     char capacity[BUF_CAPACITY_SZ], lnk[BUF_LINK_SZ], datetime[BUF_DATETIME_SZ],
         buf[BUF_SZ];
 
@@ -57,16 +57,15 @@ int main(int argc __attribute__((unused)), char *argv[])
 
     for (;; sleep(SLEEP_SEC))
     {
-        FILE *fp;
-        size_t i;
-        time_t timeraw;
+        time_t tm;
 
-        if (++count_1 > SLEEP_1)
+        if (!--count_1)
         {
-            count_1 = 0;
-
-            if ((fp = fopen(PATH_LINK, "rb")) != NULL)
+            FILE *fp = fopen(PATH_LINK, "rb");
+            if (fp != NULL)
             {
+                size_t i;
+
                 fgets(lnk, BUF_LINK_SZ, fp);
                 fclose(fp);
                 /* trim first newline and everything after */
@@ -77,8 +76,9 @@ int main(int argc __attribute__((unused)), char *argv[])
                         break;
                     }
 
-                /* possible WIFI_IFNAME without "	00000000" address
-                 * (tab in "	00000000" is required) */
+                /* check internet availability
+                   possible WIFI_IFNAME without "	00000000" address
+                   (tab in "	00000000" is required) */
                 /*
                 char rstr[] = IFACE "	00000000";
                 char rbuf[64];
@@ -96,14 +96,17 @@ int main(int argc __attribute__((unused)), char *argv[])
             }
             else
                 lnk[0] = '\0';
+
+            count_1 = SLEEP_1;
         }
 
-        if (++count_2 > SLEEP_2)
+        if (!--count_2)
         {
-            count_2 = 0;
-
-            if ((fp = fopen(PATH_CAPACITY, "rb")) != NULL)
+            FILE *fp = fopen(PATH_CAPACITY, "rb");
+            if (fp != NULL)
             {
+                size_t i;
+
                 fgets(capacity, BUF_CAPACITY_SZ, fp);
                 fclose(fp);
                 /* trim first newline and everything after */
@@ -116,12 +119,12 @@ int main(int argc __attribute__((unused)), char *argv[])
             }
             else
                 capacity[0] = '\0';
+
+            count_2 = SLEEP_2;
         }
 
-        timeraw = time(NULL);
-        if (strftime(datetime, BUF_DATETIME_SZ, DATETIME_FORMAT,
-                     localtime(&timeraw)) == 0)
-            datetime[0] = '\0';
+        tm = time(NULL);
+        strftime(datetime, BUF_DATETIME_SZ, DATETIME_FORMAT, localtime(&tm));
 
         sprintf(buf, BUF_FORMAT, capacity, lnk, datetime);
 
