@@ -5,7 +5,7 @@
  *
  * Andrey Shashanov (2018)
  *
- * Edit your: IFACE and BATTERY
+ * Edit your: IFNAME and BATTERY
  *
  * Build:
  * gcc -Wall -pedantic -std=c99 -O3 -s -lX11 dwmstatusbar.c -o dwmstatusbar
@@ -19,17 +19,17 @@
 #include <unistd.h>
 #include <X11/Xlib.h>
 
-#define IFACE "wlp3s0"
+#define IFNAME "wlp3s0"
 #define BATTERY "BAT0"
 
-#define PATH_LINK "/sys/class/net/" IFACE "/operstate"
+#define PATH_LINK "/sys/class/net/" IFNAME "/operstate"
 #define PATH_CAPACITY "/sys/class/power_supply/" BATTERY "/capacity"
 #define DATETIME_FORMAT "%Y-%m-%d %a %H:%M"
-#define BUF_FORMAT BATTERY ":%s%%  " IFACE ":%s  %s"
+#define BUF_FORMAT BATTERY ":%s%%  " IFNAME ":%s  %s"
 #define SLEEP_SEC 10
 #define SLEEP_1 2 /* SLEEP_SEC * SLEEP_1 */
 #define SLEEP_2 6 /* SLEEP_SEC * SLEEP_2 */
-#define BUF_CAPACITY_SZ 16
+#define BUF_CAPACITY_SZ 32
 #define BUF_LINK_SZ 32
 #define BUF_DATETIME_SZ 128
 #define BUF_SZ (64 + BUF_CAPACITY_SZ + BUF_LINK_SZ + BUF_DATETIME_SZ)
@@ -77,15 +77,14 @@ int main(int argc __attribute__((unused)), char *argv[])
                     }
 
                 /* check internet availability
-                   possible WIFI_IFNAME without "	00000000" address
+                   possible IFNAME without "	00000000" address
                    (tab in "	00000000" is required) */
                 /*
-                char rstr[] = IFACE "	00000000";
-                char rbuf[64];
                 if ((fp = fopen("/proc/net/route", "rb")) != NULL)
                 {
+                    char rbuf[64], rstr[] = IFNAME "	00000000";
                     while (fgets(rbuf, sizeof(rbuf), fp) != NULL)
-                        if (strstr(rbuf, rstr) != NULL && lnk[0] != 'd')
+                        if (strstr(rbuf, rstr) != NULL && !strcmp(lnk, "up"))
                         {
                             strcat(lnk, "*");
                             break;
