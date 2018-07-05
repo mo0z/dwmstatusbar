@@ -1,14 +1,10 @@
 /*
- * dwmstatusbar.c
- * Very simple statusbar for dynamic window manager (dwm)
- * (battery capacity, link status, date-time)
- *
- * Andrey Shashanov (2018)
- *
- * Edit your: IFNAME and BATTERY
- *
- * Build:
- * gcc -Wall -pedantic -std=c99 -O3 -s -lX11 dwmstatusbar.c -o dwmstatusbar
+Very simple statusbar for dwm (dynamic window manager):
+battery capacity, link status, date-time.
+Andrey Shashanov (2018)
+
+Edit your: IFNAME and BATTERY
+gcc -O3 -s -lX11 -o dwmstatusbar dwmstatusbar.c
 */
 
 #include <locale.h>
@@ -26,30 +22,26 @@
 #define PATH_CAPACITY "/sys/class/power_supply/" BATTERY "/capacity"
 #define DATETIME_FORMAT "%Y-%m-%d %a %H:%M"
 #define BUF_FORMAT BATTERY ":%s%%  " IFNAME ":%s  %s"
-#define SLEEP_SEC 10
-#define SLEEP_1 2 /* SLEEP_SEC * SLEEP_1 */
-#define SLEEP_2 6 /* SLEEP_SEC * SLEEP_2 */
-#define BUF_CAPACITY_SZ 32
-#define BUF_LINK_SZ 32
-#define BUF_DATETIME_SZ 128
-#define BUF_SZ (64 + BUF_CAPACITY_SZ + BUF_LINK_SZ + BUF_DATETIME_SZ)
+#define SLEEP_SEC 10U
+#define SLEEP_1 2U /* SLEEP_SEC * SLEEP_1 */
+#define SLEEP_2 6U /* SLEEP_SEC * SLEEP_2 */
 
-static char *getprogname_of_argv(char *argv_zero_tzs);
+static char *program_short_name(char *__restrict s);
 
 int main(int argc __attribute__((unused)), char *argv[])
 {
     Display *dpy;
     Window w;
     size_t count_1 = 1, count_2 = 1;
-    char capacity[BUF_CAPACITY_SZ], lnk[BUF_LINK_SZ], datetime[BUF_DATETIME_SZ],
-        buf[BUF_SZ];
+    char capacity[32], lnk[32], datetime[128],
+        buf[64 + sizeof capacity + sizeof lnk + sizeof datetime];
 
     /* setlocale(LC_TIME, ""); */
 
     if ((dpy = XOpenDisplay(NULL)) == NULL)
     {
         fprintf(stderr, "%s: Error open DISPLAY\n",
-                getprogname_of_argv(argv[0]));
+                program_short_name(argv[0]));
         return EXIT_FAILURE;
     }
 
@@ -57,24 +49,31 @@ int main(int argc __attribute__((unused)), char *argv[])
 
     for (;; sleep(SLEEP_SEC))
     {
-        time_t tm;
+        time_t timer;
 
-        if (!--count_1)
+        if (!(--count_1))
         {
             FILE *fp = fopen(PATH_LINK, "rb");
             if (fp != NULL)
             {
-                size_t i;
+                char filebuf[sizeof lnk];
 
-                fgets(lnk, BUF_LINK_SZ, fp);
-                fclose(fp);
-                /* trim first newline and everything after */
-                for (i = 0; lnk[i]; ++i)
+                setvbuf(fp, filebuf, _IOFBF, sizeof filebuf);
+
+                if (fgets(lnk, sizeof lnk, fp) != NULL)
+                {
+                    /* tuncate newline */
+                    size_t i;
+                    for (i = 0; lnk[i]; ++i)
+                        ;
+                    --i;
                     if (lnk[i] == '\n')
-                    {
                         lnk[i] = '\0';
-                        break;
-                    }
+                }
+                else
+                    lnk[0] = '\0';
+
+                fclose(fp);
 
                 /* check internet availability
                    possible IFNAME without "	00000000" address
@@ -82,8 +81,8 @@ int main(int argc __attribute__((unused)), char *argv[])
                 /*
                 if ((fp = fopen("/proc/net/route", "rb")) != NULL)
                 {
-                    char rbuf[64], rstr[] = IFNAME "	00000000";
-                    while (fgets(rbuf, sizeof(rbuf), fp) != NULL)
+                    char rbuf[256], rstr[] = IFNAME "	00000000";
+                    while (fgets(rbuf, sizeof rbuf, fp) != NULL)
                         if (strstr(rbuf, rstr) != NULL && !strcmp(lnk, "up"))
                         {
                             strcat(lnk, "*");
@@ -99,22 +98,29 @@ int main(int argc __attribute__((unused)), char *argv[])
             count_1 = SLEEP_1;
         }
 
-        if (!--count_2)
+        if (!(--count_2))
         {
             FILE *fp = fopen(PATH_CAPACITY, "rb");
             if (fp != NULL)
             {
-                size_t i;
+                char filebuf[sizeof capacity];
 
-                fgets(capacity, BUF_CAPACITY_SZ, fp);
-                fclose(fp);
-                /* trim first newline and everything after */
-                for (i = 0; capacity[i]; ++i)
+                setvbuf(fp, filebuf, _IOFBF, sizeof filebuf);
+
+                if (fgets(capacity, sizeof capacity, fp) != NULL)
+                {
+                    /* tuncate newline */
+                    size_t i;
+                    for (i = 0; capacity[i]; ++i)
+                        ;
+                    --i;
                     if (capacity[i] == '\n')
-                    {
                         capacity[i] = '\0';
-                        break;
-                    }
+                }
+                else
+                    capacity[0] = '\0';
+
+                fclose(fp);
             }
             else
                 capacity[0] = '\0';
@@ -122,8 +128,8 @@ int main(int argc __attribute__((unused)), char *argv[])
             count_2 = SLEEP_2;
         }
 
-        tm = time(NULL);
-        strftime(datetime, BUF_DATETIME_SZ, DATETIME_FORMAT, localtime(&tm));
+        timer = time(NULL);
+        strftime(datetime, sizeof datetime, DATETIME_FORMAT, localtime(&timer));
 
         sprintf(buf, BUF_FORMAT, capacity, lnk, datetime);
 
@@ -133,17 +139,18 @@ int main(int argc __attribute__((unused)), char *argv[])
 
     /* code will never be executed
     XCloseDisplay(dpy);
+    return EXIT_SUCCESS;
     */
 }
 
-/* get current process name without path */
-char *getprogname_of_argv(char *argv_zero_tzs)
+/* get program name without path */
+char *program_short_name(char *__restrict s)
 {
     char *p;
-    if (argv_zero_tzs == NULL)
+    if (s == NULL)
         return NULL;
-    for (p = argv_zero_tzs; *argv_zero_tzs; ++argv_zero_tzs)
-        if (*argv_zero_tzs == '/')
-            p = argv_zero_tzs + 1;
+    for (p = s; *s; ++s)
+        if (*s == '/')
+            p = s + 1U;
     return p;
 }
