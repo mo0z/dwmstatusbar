@@ -26,7 +26,7 @@ gcc -O3 -s -lX11 -o dwmstatusbar dwmstatusbar.c
 #define SLEEP_1 2U /* SLEEP_SEC * SLEEP_1 */
 #define SLEEP_2 6U /* SLEEP_SEC * SLEEP_2 */
 
-static char *program_short_name(char *__restrict s);
+static char *program_short_name(char *s);
 
 int main(int argc __attribute__((unused)), char *argv[])
 {
@@ -144,7 +144,7 @@ int main(int argc __attribute__((unused)), char *argv[])
 }
 
 /* get program name without path */
-char *program_short_name(char *__restrict s)
+char *program_short_name(char *s)
 {
     char *p;
     if (s == NULL)
