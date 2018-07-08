@@ -26,7 +26,7 @@ gcc -O3 -s -lX11 -o dwmstatusbar dwmstatusbar.c
 #define SLEEP_1 2U /* SLEEP_SEC * SLEEP_1 */
 #define SLEEP_2 6U /* SLEEP_SEC * SLEEP_2 */
 
-static char *program_short_name(char *s);
+static char *program_name(char *s);
 
 int main(int argc __attribute__((unused)), char *argv[])
 {
@@ -40,8 +40,7 @@ int main(int argc __attribute__((unused)), char *argv[])
 
     if ((dpy = XOpenDisplay(NULL)) == NULL)
     {
-        fprintf(stderr, "%s: Error open DISPLAY\n",
-                program_short_name(argv[0]));
+        fprintf(stderr, "%s: Error open DISPLAY\n", program_name(argv[0]));
         return EXIT_FAILURE;
     }
 
@@ -143,8 +142,8 @@ int main(int argc __attribute__((unused)), char *argv[])
     */
 }
 
-/* get program name without path */
-char *program_short_name(char *s)
+/* get short program name */
+char *program_name(char *s)
 {
     char *p;
     if (s == NULL)
